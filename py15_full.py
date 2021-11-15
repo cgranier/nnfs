@@ -519,7 +519,7 @@ for epoch in range(10001):
         f'lr: {optimizer.current_learning_rate:.6f}')
     
         # Update plot arrays
-        yacc.append(accuracy)
+        xepoch.append(epoch)
         yloss.append(loss)
         dloss.append(data_loss)
         rloss.append(regularization_loss)
