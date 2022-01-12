@@ -553,10 +553,18 @@ dense1 = Layer_Dense(1, 64)
 activation1 = Activation_ReLU()
 
 # Create a second Dense layer with 64 input features (as we take output
-# of previous layer here) and 1 output values (output values)
-dense2 = Layer_Dense(64, 1)
+# of previous layer here) and 64 output values (output values)
+dense2 = Layer_Dense(64, 64)
+
+# Create ReLU activation (to be used with Dense layer):
+activation2 = Activation_ReLU()
+
+# Create third Dense layer with 64 input features (as we take output
+# from the previous layer here) and 1 output value
+dense3 = Layer_Dense(64,1)
+
 # Create Linear activation:
-activation2 = Activation_Linear()
+activation3 = Activation_Linear()
 
 # Create loss function
 loss_function = Loss_MeanSquaredError()
@@ -589,14 +597,24 @@ for epoch in range(10001):
     dense2.forward(activation1.output)
 
     # Perform a forward pass though the activation function
-    # Takes the output of second dense layer here and returns loss
+    # Takes the output of second dense layer here
     activation2.forward(dense2.output)
 
+    # Perform a forward pass through third Dense layer
+    # Takes outputs of activation function of first layer as input
+    dense3.forward(activation2.output)
+
+    # Perform a forward pass though the activation function
+    # Takes the output of third dense layer here
+    activation3.forward(dense3.output)
+
     # Calculate the data loss
-    data_loss = loss_function.calculate(activation2.output, y)
+    data_loss = loss_function.calculate(activation3.output, y)
 
     # Calculate regularization penalty
-    regularization_loss = loss_function.regularization_loss(dense1) + loss_function.regularization_loss(dense2)
+    regularization_loss = loss_function.regularization_loss(dense1) + \
+                          loss_function.regularization_loss(dense2) + \
+                          loss_function.regularization_loss(dense3)
 
     # Calculate overall loss
     loss = data_loss + regularization_loss
@@ -605,7 +623,7 @@ for epoch in range(10001):
     # To calculate it we're taking absolute difference between
     # predictions and ground truth values and compare if differences
     # are lower than given precision value
-    predictions = activation2.output
+    predictions = activation3.output
     accuracy = np.mean(np.absolute(predictions - y) < accuracy_precision)
 
     if not epoch % 100:
@@ -617,8 +635,10 @@ for epoch in range(10001):
               f'lr: {optimizer.current_learning_rate:.6f}')
     
     # Backward pass
-    loss_function.backward(activation2.output, y)
-    activation2.backward(loss_function.dinputs)
+    loss_function.backward(activation3.output, y)
+    activation3.backward(loss_function.dinputs)
+    dense3.backward(activation3.dinputs)
+    activation2.backward(dense3.dinputs)
     dense2.backward(activation2.dinputs)
     activation1.backward(dense2.dinputs)
     dense1.backward(activation1.dinputs)
@@ -627,6 +647,7 @@ for epoch in range(10001):
     optimizer.pre_update_params()
     optimizer.update_params(dense1)
     optimizer.update_params(dense2)
+    optimizer.update_params(dense3)
     optimizer.post_update_params()
 
 # Validate the model
@@ -649,8 +670,11 @@ dense2.forward(activation1.output)
 # takes the output of second dense layer here
 activation2.forward(dense2.output)
 
+dense3.forward(activation2.output)
+activation3.forward(dense3.output)
+
 plt.plot(X_test, y_test)
-plt.plot(X_test, activation2.output)
+plt.plot(X_test, activation3.output)
 plt.show()
 
 print(f'Validation, acc: {accuracy:.3f}, loss: {loss:.3f}')
