@@ -81,6 +81,13 @@ class Layer_Dropout:
         # Gradient on values
         self.dinputs = dvalues * self.binary_mask
 
+# Input "layer"
+class Layer_Input:
+
+    # Forward pass
+    def forward(self, inputs):
+        self.output = inputs
+
 # ReLU activation
 class Activation_ReLU:
 
@@ -553,15 +560,69 @@ class Model:
     # Add objects to the model
     def add(self, layer):
         self.layers.append(layer)
+
+    # Set loss and optimizer
+    def set(self, *, loss, optimizer):
+        self.loss = loss
+        self.optimizer = optimizer
     
+    # Finalize the model
+    def finalize(self):
+
+        # Create and set the input layer
+        self.input_layer = Layer_Input()
+
+        # Count all the objects
+        layer_count = len(self.layers)
+
+        # Iterate the objects
+        for i in range(layer_count):
+
+            # If it's the first layer,
+            # the previous layer object is the input layer
+            if i == 0:
+                self.layers[i].prev = self.input_layer
+                self.layers[i].next = self.layers[i+1]
+            
+            # All layers except for the first and the last
+            elif i < layer_count - 1:
+                self.layers[i].prev = self.layers[i-1]
+                self.layers[i].next = self.layers[i+1]
+            
+            # The last layer - the next object is the loss
+            else:
+                self.layers[i].prev = self.layers[i-1]
+                self.layers[i].next = self.loss
+
     # Train the model
     def train(self, X, y, *, epochs=1, print_every=1):
 
         # Main training loop
         for epoch in range(1, epochs+1):
+
+            # Perform the forward pass
+            output = self.forward(X)
             
             # Temporary
-            pass
+            print(output)
+            exit()
+
+    # Performs forward pass
+    def forward(self, X):
+
+        # Call forward method on the input layer
+        # This will set the output property that
+        # the first layer in "prev" object is expecting
+        self.input_layer.forward(X)
+
+        # Call forward method of every object in a chain
+        # Pass output of the previous object as a parameter
+        for layer in self.layers:
+            layer.forward(layer.prev.output)
+        
+        # "layer" is now the last object from the list,
+        # return its output
+        return layer.output
 
 # Create dataset
 X, y = sine_data()
@@ -580,114 +641,11 @@ model.add(Activation_Linear())
 # Set loss and optimizer objects
 model.set(
     loss=Loss_MeanSquaredError(),
-    optimizer=Optimizer_Adam(learning_rate=0.005, decay=1e-3),
+    optimizer=Optimizer_Adam(learning_rate=0.005, decay=1e-3)
 )
 
+# Finalize the model
+model.finalize()
+
+# Train the model
 model.train(X, y, epochs=10000, print_every=100)
-
-# Accuracy precision for accuracy calculation
-# There isn't really an accuracy factor for regression problems,
-# but we can simulate/approximate it. We'll calculate it by checking
-# how many values have a difference to their ground truth equivalent
-# less than the given precision.
-# We'll calculate this precision as a fraction of the standard deviation
-# of all ground truth values.
-accuracy_precision = np.std(y) / 250
-
-# Train in a loop
-# to incorporate our optimizations into the model
-for epoch in range(10001):
-
-    # Perform a forward pass of our training data through this layer
-    dense1.forward(X)
-
-    # Perform a forward pass through activation functions
-    # Takes the output of first dense layer here
-    activation1.forward(dense1.output)
-
-    # Perform a forward pass through second Dense layer
-    # Takes outputs of activation function of first layer as input
-    dense2.forward(activation1.output)
-
-    # Perform a forward pass though the activation function
-    # Takes the output of second dense layer here
-    activation2.forward(dense2.output)
-
-    # Perform a forward pass through third Dense layer
-    # Takes outputs of activation function of first layer as input
-    dense3.forward(activation2.output)
-
-    # Perform a forward pass though the activation function
-    # Takes the output of third dense layer here
-    activation3.forward(dense3.output)
-
-    # Calculate the data loss
-    data_loss = loss_function.calculate(activation3.output, y)
-
-    # Calculate regularization penalty
-    regularization_loss = loss_function.regularization_loss(dense1) + \
-                          loss_function.regularization_loss(dense2) + \
-                          loss_function.regularization_loss(dense3)
-
-    # Calculate overall loss
-    loss = data_loss + regularization_loss
-
-    # Calculate accuracy from output of activation2 and targets
-    # To calculate it we're taking absolute difference between
-    # predictions and ground truth values and compare if differences
-    # are lower than given precision value
-    predictions = activation3.output
-    accuracy = np.mean(np.absolute(predictions - y) < accuracy_precision)
-
-    if not epoch % 100:
-        print(f'epoch: {epoch}, ' + 
-              f'acc: {accuracy:.3f}, ' + 
-              f'loss: {loss:.3f}, (' + 
-              f'd_loss: {data_loss:.3f}, ' +
-              f'r_loss: {regularization_loss:.3f}), ' +
-              f'lr: {optimizer.current_learning_rate:.6f}')
-    
-    # Backward pass
-    loss_function.backward(activation3.output, y)
-    activation3.backward(loss_function.dinputs)
-    dense3.backward(activation3.dinputs)
-    activation2.backward(dense3.dinputs)
-    dense2.backward(activation2.dinputs)
-    activation1.backward(dense2.dinputs)
-    dense1.backward(activation1.dinputs)
-
-    # Update weights and biases
-    optimizer.pre_update_params()
-    optimizer.update_params(dense1)
-    optimizer.update_params(dense2)
-    optimizer.update_params(dense3)
-    optimizer.post_update_params()
-
-# Validate the model
-
-# Create test dataset
-X_test, y_test = sine_data()
-
-# Perform a forward pass of our ternting data through this layer
-dense1.forward(X_test)
-
-# Perform a forward pass through activation function
-# Takes the output of first dense layer here
-activation1.forward(dense1.output)
-
-# Perform a forward pass through the second Dense layer
-# Takes outputs of activation function of first layer as inputs
-dense2.forward(activation1.output)
-
-# Perform a forward pass through activation function
-# takes the output of second dense layer here
-activation2.forward(dense2.output)
-
-dense3.forward(activation2.output)
-activation3.forward(dense3.output)
-
-plt.plot(X_test, y_test)
-plt.plot(X_test, activation3.output)
-plt.show()
-
-print(f'Validation, acc: {accuracy:.3f}, loss: {loss:.3f}')
