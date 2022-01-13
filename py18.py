@@ -553,6 +553,15 @@ class Model:
     # Add objects to the model
     def add(self, layer):
         self.layers.append(layer)
+    
+    # Train the model
+    def train(self, X, y, *, epochs=1, print_every=1):
+
+        # Main training loop
+        for epoch in range(1, epochs+1):
+            
+            # Temporary
+            pass
 
 # Create dataset
 X, y = sine_data()
@@ -562,6 +571,19 @@ model = Model()
 
 # Add layers
 model.add(Layer_Dense(1, 64))
+model.add(Activation_ReLU())
+model.add(Layer_Dense(64,64))
+model.add(Activation_ReLU)
+model.add(Layer_Dense(64,1))
+model.add(Activation_Linear())
+
+# Set loss and optimizer objects
+model.set(
+    loss=Loss_MeanSquaredError(),
+    optimizer=Optimizer_Adam(learning_rate=0.005, decay=1e-3),
+)
+
+model.train(X, y, epochs=10000, print_every=100)
 
 # Accuracy precision for accuracy calculation
 # There isn't really an accuracy factor for regression problems,
