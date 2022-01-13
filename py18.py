@@ -634,7 +634,7 @@ model = Model()
 model.add(Layer_Dense(1, 64))
 model.add(Activation_ReLU())
 model.add(Layer_Dense(64,64))
-model.add(Activation_ReLU)
+model.add(Activation_ReLU())
 model.add(Layer_Dense(64,1))
 model.add(Activation_Linear())
 
