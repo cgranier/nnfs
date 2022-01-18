@@ -142,3 +142,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Ignore dataset
+*.zip
+fashion_mnist_images/
