@@ -667,7 +667,7 @@ class Model:
         # Initialize accuracy object
         self.accuracy.init(y)
         
-        # deFAULT VALUE IF BATCH SIZE NOT SET
+        # Default value if batch_size not set
         train_steps = 1
 
         # If there is validation data passed,
@@ -819,6 +819,7 @@ class Model:
             f'acc: {validation_accuracy:.3f}, ' +
             f'loss: {validation_loss:.3f}')
         print(f'------------------------------------')
+    
     # Performs forward pass
     def forward(self, X, training):
 
@@ -1007,3 +1008,9 @@ model.finalize()
 
 # Train the model
 model.train(X, y, validation_data=(X_test, y_test), epochs=10, batch_size=128, print_every=100)
+
+# Evaluate the model
+model.evaluate(X_test, y_test)
+
+# Evaluate training data
+model.evaluate(X, y)
