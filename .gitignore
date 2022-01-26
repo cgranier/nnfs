@@ -146,3 +146,4 @@ dmypy.json
 # Ignore dataset
 *.zip
 fashion_mnist_images/
+*.parms
