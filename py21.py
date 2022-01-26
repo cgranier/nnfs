@@ -906,13 +906,21 @@ class Model:
             layer.set_parameters(*parameter_set)
 
     # Saves the parameters to a file
-    def save_parameters(self, path)
+    def save_parameters(self, path):
 
         # Open a file in binary-write mode
         # and save parameters to it
         with open(path, 'wb') as f:
             pickle.dump(self.get_parameters(), f)
 
+    # Loads the weights and updates a model instance with them
+    def load_parameters(self, path):
+        
+        # Open a file in binary-read mode,
+        # load weights and update trainable layers
+        with open(path, 'rb') as f:
+            self.set_parameters(pickle.load(f))
+    
 # Common accuracy class
 class Accuracy:
     
@@ -1052,8 +1060,8 @@ model.finalize()
 # Train the model
 model.train(X, y, validation_data=(X_test, y_test), epochs=10, batch_size=128, print_every=100)
 
-# Retrieve and print parameters
-parameters = model.get_parameters()
+# Save the parameters to a file
+model.save_parameters('fashion_mnist.parms')
 
 # New model
 
@@ -1077,7 +1085,7 @@ model.set(loss=Loss_CategoricalCrossentropy(), accuracy=Accuracy_Categorical())
 model.finalize()
 
 # Set model with parameters instead of training it
-model.set_parameters(parameters)
+model.load_parameters('fashion_mnist.parms')
 
 # Evaluate the model
 model.evaluate(X_test, y_test)
