@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import os
 import nnfs
+import pickle
 
 nnfs.init()
 
@@ -60,6 +61,12 @@ class Layer_Dense:
     # Retrieve layer parameters
     def get_parameters(self):
         return self.weights, self.biases
+    
+    # Set weights and biases in a layer instance
+    def set_parameters(self, weights, biases):
+        self.weights = weights
+        self.biases = biases
+        
 # Dropout
 class Layer_Dropout:
 
@@ -604,10 +611,13 @@ class Model:
         self.layers.append(layer)
 
     # Set loss and optimizer
-    def set(self, *, loss, optimizer, accuracy):
-        self.loss = loss
-        self.optimizer = optimizer
-        self.accuracy = accuracy
+    def set(self, *, loss=None, optimizer=None, accuracy=None):
+        if loss is not None:
+            self.loss = loss
+        if optimizer is not None:
+            self.optimizer = optimizer
+        if accuracy is not None:
+            self.accuracy = accuracy
     
     # Finalize the model
     def finalize(self):
@@ -652,7 +662,8 @@ class Model:
                 self.trainable_layers.append(self.layers[i])
             
         # Update loss object with trainable layers
-        self.loss.remember_trainable_layers(self.trainable_layers)
+        if self.loss is not None:
+            self.loss.remember_trainable_layers(self.trainable_layers)
         
         # If output activation is Softmax and
         # loss function is Categorical Cross-Entropy
@@ -873,6 +884,35 @@ class Model:
         for layer in reversed(self.layers):
             layer.backward(layer.next.dinputs)
 
+    # Retrieves and returns parameters of trainable layers
+    def get_parameters(self):
+        
+        # Create a list for parameters
+        parameters = []
+        
+        # Iterate trainable layers and get their parameters
+        for layer in self.trainable_layers:
+            parameters.append(layer.get_parameters())
+        
+        # Return a list
+        return parameters
+
+    # Updates the model with new parameters
+    def set_parameters(self, parameters):
+        
+        # Itereate over the parameters and layers
+        # and update each layer with each set of the parameters
+        for parameter_set, layer in zip(parameters, self.trainable_layers):
+            layer.set_parameters(*parameter_set)
+
+    # Saves the parameters to a file
+    def save_parameters(self, path)
+
+        # Open a file in binary-write mode
+        # and save parameters to it
+        with open(path, 'wb') as f:
+            pickle.dump(self.get_parameters(), f)
+
 # Common accuracy class
 class Accuracy:
     
@@ -1012,8 +1052,33 @@ model.finalize()
 # Train the model
 model.train(X, y, validation_data=(X_test, y_test), epochs=10, batch_size=128, print_every=100)
 
+# Retrieve and print parameters
+parameters = model.get_parameters()
+
+# New model
+
+# Instantiate the model
+model = Model()
+
+# Add layers
+model.add(Layer_Dense(X.shape[1], 128))
+model.add(Activation_ReLU())
+model.add(Layer_Dense(128, 128))
+model.add(Activation_ReLU())
+model.add(Layer_Dense(128, 10))
+model.add(Activation_Softmax())
+
+# Set loss and accuracy objects
+# We do not set optimizer object this time - there's no need to do it
+# as we won't train the model
+model.set(loss=Loss_CategoricalCrossentropy(), accuracy=Accuracy_Categorical())
+
+# Finalize the model
+model.finalize()
+
+# Set model with parameters instead of training it
+model.set_parameters(parameters)
+
 # Evaluate the model
 model.evaluate(X_test, y_test)
 
-# Evaluate training data
-model.evaluate(X, y)
