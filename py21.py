@@ -4,6 +4,7 @@ import cv2
 import os
 import nnfs
 import pickle
+import copy
 
 nnfs.init()
 
@@ -920,6 +921,30 @@ class Model:
         # load weights and update trainable layers
         with open(path, 'rb') as f:
             self.set_parameters(pickle.load(f))
+
+    # Saves the model
+    def save(self, path):
+
+        # Make a deep copy of current model instance
+        model = copy.deepcopy(self)
+        
+        # Reset accumulated values in loss and accuracy objects
+        model.loss.new_pass()
+        model. accuracy.new_pass()
+        
+        # Remove data from input layer
+        # and gradients from the loss object
+        model.input_layer.__dict__.pop('output', None)
+        model.loss.__dict__.pop('dinputs', None)
+        
+        # For each layer remove inputs, output and dinputs properties
+        for layer in model.layers:
+            for property in ['inputs', 'output', 'dinputs', 'dweights', 'dbiases']:
+                layer.__dict__.pop(property, None)
+        
+        # Open a file in binary-write mode and save the model
+        with open(path, 'wb') as f:
+            pickle.dump(model, f)
     
 # Common accuracy class
 class Accuracy:
@@ -1062,6 +1087,9 @@ model.train(X, y, validation_data=(X_test, y_test), epochs=10, batch_size=128, p
 
 # Save the parameters to a file
 model.save_parameters('fashion_mnist.parms')
+
+# Save the model to a file
+model.save('fashion_mnist.model')
 
 # New model
 

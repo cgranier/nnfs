@@ -147,3 +147,4 @@ dmypy.json
 *.zip
 fashion_mnist_images/
 *.parms
+*.model
