@@ -956,7 +956,43 @@ class Model:
         
         # Return a model
         return model
-    
+
+    # Predicts on the samples
+    def predict(self, X, *, batch_size=None):
+        
+        # Default value if batch size not being set
+        prediction_steps = 1
+        
+        # Calculate the number of steps
+        if batch_size is not None:
+            prediction_steps = len(X) // batch_size
+            if prediction_steps * batch_size < len(X):
+                prediction_steps += 1
+        
+        # Model output
+        output = []
+        
+        # Iterate over steps
+        for step in range(prediction_steps):
+            
+            # If batch size is not set, then
+            # train using one step and full dataset
+            if batch_size is None:
+                batch_X = X
+            
+            # Otherwise slice a batch
+            else:
+                batch_X = X[step*batch_size:(step+1)*batch_size]
+            
+            # Perform the forward pass
+            batch_output = self.forward(batch_X, training=False)
+            
+            # Append batch prediction to the list of predictions
+            output.append(batch_output)
+            
+        # Stack and return results
+        return np.vstack(output)
+
 # Common accuracy class
 class Accuracy:
     
@@ -1075,9 +1111,13 @@ X_test = (X_test.reshape(X_test.shape[0], -1).astype(np.float32) - 127.5) / 127.
 # Load the model
 model = Model.load('fashion_mnist.model')
 
-# Evaluate the model
-model.evaluate(X_test, y_test)
+# Predict on the first 5 samples from validation dataset
+# and print the result
+confidences = model.predict(X_test[:5])
+print(confidences)
 
+# # Evaluate the model
+# model.evaluate(X_test, y_test)
 
 # # Instantiate the model
 # model = Model()
